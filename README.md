@@ -2,12 +2,15 @@
 Contains my project presented at the Qiskit Fall Fest PNC 2025 for the Quantum Random Number Generator hackaton.
 
 ## Project structure
+```
 qrng-hackathon_2025/
 ├── README.md
 └── qrng/
     ├── circuit.py
     ├── runner.py
     └── Hackaton_2025_usage.ipynb
+```
+    
 ## Explanation
 ### circuit.py
 Contains function build_qrng which generates a circuit creating a uniform superposition of all outcomes.
