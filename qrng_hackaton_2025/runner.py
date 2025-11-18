@@ -87,37 +87,49 @@ def run_qrng(num_outcomes: int, shots: int = 1, simulator: bool = True, show_cir
         result = job.result()
         counts_binary = result.get_counts()
     
-    # Process results
+    # Plot results
     if show_histo:
         print(f"Distribution of the {shots} outcomes:\n")
         histo = plot_histogram(counts_binary, figsize = (14,6))
         display(histo)
     
+    # Convert measured outcomes into integers
     counts_int = {int(bitstring, 2): occurrence for bitstring, occurrence in counts_binary.items()}
     outcomes = list(counts_int.keys())
     print(f"Outcomes: {sorted(outcomes)}\n")
     
+    # Compute normalized standard deviation of the outcomes
     occurrences = list(counts_int.values())
-    std_norm = round(np.std(occurrences)/shots, 9)  # Normalized standard deviation, rounded
+    std_norm = round(np.std(occurrences)/np.mean(occurrences), 9)  # Normalized standard deviation, rounded
     std_norm = float(std_norm)
     print(f"Normalized standard deviation: {std_norm:.3g}\n")
     
-    print(f"Range: [0, {num_outcomes-1}]\n")
-    
+    # Filters results whose (integer) outcomes are in the user's desired range
     valid_counts = {outcome: occurrence for outcome, occurrence in counts_int.items() if outcome < num_outcomes}
     valid_outcomes = list(valid_counts.keys())
+    print(f"Desired range: [0, {num_outcomes-1}]")
     print(f"Valid outcomes: {sorted(valid_outcomes)}\n")
     
-    # Extract the outcome which occurred more frequently. Since each shot provides quantum randomness, this value is random too
+    # Probe the (integer) outcome which occurred more frequently. Since each shot provides quantum randomness, this value is random too
     valid_occurrences = list(valid_counts.values())
     max_occurrence = max(valid_occurrences)
     max_indices = [index for index, occ in enumerate(valid_occurrences) if occ == max_occurrence]   
     
+    # If there are multiple outcomes with maximum frequency, re-run the circuit with a single shot. Else, extract the most frequent outcome
     if len(max_indices) > 1:
-        # If there are multiple outcomes with maximum frequency, suggest to re-run the function
-        print("Multiple outcomes with maximum frequency: re-run the function to obtain a random number")
-        return None, std_norm
+        print("Multiple outcomes with maximum frequency: re-run the circuit with shots = 1\n")
+        single_job = runner.run([(transpiled_qc)], shots = 1)
+        if simulator == False:
+            result = single_job.result()[0]
+            count = result.data.c.get_counts()
+        else:
+            result = single_job.result()
+            count = result.get_counts()
+            
+        random_num = list(count.keys())[0]
+        random_num = int(random_num, 2)
     else:
         # Otherwise, extract the outcome which occurred more frequently
-        most_frequent_outcome = valid_outcomes[max_indices[0]]
-        return most_frequent_outcome, std_norm
+        random_num = valid_outcomes[max_indices[0]]
+    
+    return random_num, std_norm
